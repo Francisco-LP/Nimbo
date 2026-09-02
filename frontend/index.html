@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nimbo · Tu nube casera</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>☁️</text></svg>">
+</head>
+<body>
+
+  <!-- Notificaciones (toasts) -->
+  <div id="toast-container" aria-live="polite"></div>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="brand">
+      <span class="logo">☁️</span>
+      <h1>Nimbo</h1>
+      <!--<span class="tagline">tu nube casera</span>-->
+    </div>
+    <div class="header-actions">
+      <button id="btn-config" class="btn btn-ghost" title="Configuración">⚙️&nbsp;Config</button>
+      <button id="btn-logs" class="btn btn-ghost" title="Logs de actividad">📝&nbsp;Logs</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Toolbar -->
+    <section class="toolbar">
+      <div class="toolbar-actions">
+        <button id="btn-upload" class="btn btn-primary">📤&nbsp;Subir archivos</button>
+        <button id="btn-download-zip" class="btn btn-secondary" disabled>📥&nbsp;Descargar ZIP</button>
+      </div>
+      <div class="search">
+        <input id="search-input" type="search" placeholder="🔍 Buscar archivos..." autocomplete="off">
+      </div>
+    </section>
+
+    <!-- Lista de archivos -->
+    <section class="file-list">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="col-check"><input type="checkbox" id="select-all" title="Seleccionar todos"></th>
+              <th class="col-name">Nombre</th>
+              <th class="col-size">Tamaño</th>
+              <th class="col-date">Fecha</th>
+              <th class="col-actions">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="file-tbody"></tbody>
+        </table>
+      </div>
+      <div id="empty-state" class="empty-state hidden">
+        <div class="empty-icon">☁️</div>
+        <p class="empty-title">No hay archivos todavía</p>
+        <p class="empty-sub">¡Sube tu primer archivo con el botón «Subir archivos»!</p>
+      </div>
+    </section>
+
+    <!-- Status bar -->
+    <section class="status-bar">
+      <span id="file-count">0 archivos</span>
+      <span class="dot">·</span>
+      <span id="used-space">0 B en uso</span>
+      <span class="dot">·</span>
+      <span id="max-space">—</span>
+    </section>
+  </main>
+
+  <!-- Modal: Subir archivos -->
+  <div id="upload-modal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>📤 Subir archivos</h2>
+        <button class="modal-close" data-close="upload-modal" title="Cerrar">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="drop-zone" class="drop-zone" tabindex="0">
+          <span class="drop-icon">📁</span>
+          <p>Arrastra archivos aquí <em>o haz clic</em> para elegir</p>
+        </div>
+        <input type="file" id="file-input" multiple hidden>
+        <ul id="upload-queue" class="upload-queue"></ul>
+      </div>
+      <div class="modal-footer">
+        <button id="btn-upload-start" class="btn btn-primary" disabled>Subir</button>
+        <button id="btn-upload-cancel" class="btn btn-danger">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Configuración -->
+  <div id="config-modal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>⚙️ Configuración</h2>
+        <button class="modal-close" data-close="config-modal" title="Cerrar">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="config-form" autocomplete="off">
+          <label for="cfg-storage">Ruta de almacenamiento</label>
+          <input type="text" id="cfg-storage" placeholder="/data" spellcheck="false">
+          <p class="field-hint">Directorio donde se guardan los archivos.</p>
+
+          <label for="cfg-maxsize">Tamaño máximo por archivo (MB)</label>
+          <input type="number" id="cfg-maxsize" min="1" step="1" placeholder="1024">
+          <p class="field-hint">1 GB = 1024 MB.</p>
+
+          <label for="cfg-port">Puerto del servidor</label>
+          <input type="text" id="cfg-port" placeholder="8080" spellcheck="false">
+          <p class="field-hint">El cambio de puerto se aplica al reiniciar.</p>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button id="btn-config-save" class="btn btn-primary">Guardar cambios</button>
+        <button class="btn btn-ghost" data-close="config-modal">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Logs -->
+  <div id="logs-modal" class="modal-overlay">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <h2>📝 Logs de actividad</h2>
+        <button class="modal-close" data-close="logs-modal" title="Cerrar">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="log-toolbar">
+          <div class="log-filters">
+            <button class="log-filter active" data-level="ALL">All</button>
+            <button class="log-filter" data-level="INFO">INFO</button>
+            <button class="log-filter" data-level="WARN">WARN</button>
+            <button class="log-filter" data-level="ERROR">ERROR</button>
+          </div>
+          <button id="btn-logs-refresh" class="btn btn-ghost">🔄 Actualizar</button>
+        </div>
+        <ul id="logs-list" class="logs-list"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/api.js"></script>
+  <script src="js/notifications.js"></script>
+  <script src="js/files.js"></script>
+  <script src="js/upload.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/logs.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

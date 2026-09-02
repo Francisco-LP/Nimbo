@@ -1,0 +1,36 @@
+# ============================================================
+# Nimbo · Nube Casera — Docker Compose
+# Uso: docker compose up -d --build
+# ============================================================
+
+services:
+  nimbo:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: nimbo
+    restart: unless-stopped
+    # Correr como el UID/GID de quien ejecuta el script, para que los
+    # volúmenes montados (./data, ./logs, ./config) sean escribibles sin
+    # depender de permisos ni de sudo. El script start.sh exporta estos
+    # valores; por defecto usan 1000 (el usuario 'nimbo' de la imagen).
+    user: "${NIMBO_UID:-1000}:${NIMBO_GID:-1000}"
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/data        # archivos subidos
+      - ./logs:/logs        # logs de actividad
+      - ./config:/config    # configuración persistente
+    environment:
+      STORAGE_PATH: /data
+      CONFIG_PATH: /config/config.json
+      LOG_PATH: /logs/activity.log
+      PORT: 8080
+      MAX_FILE_SIZE: 1073741824
+      # Zona horaria del host (el script la detecta); fallback a UTC.
+      TZ: ${TZ:-UTC}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/api/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3

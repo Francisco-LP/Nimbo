@@ -1,0 +1,7 @@
+# Nimbo — archivos generados / sensibles
+data/
+logs/
+backups/
+backend/nimbo-bin
+backend/.nimbo.pid
+*.log

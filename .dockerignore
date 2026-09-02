@@ -1,0 +1,8 @@
+# Nimbo — archivos que no van al contexto de build de Docker
+.git
+data
+logs
+backups
+backend/nimbo-bin
+backend/.nimbo.pid
+*.log
