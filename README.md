@@ -1,17 +1,16 @@
 # ☁️ Nimbo — Nube Casera
 
-Nimbo (del latín *nimbus*, "nube") es una aplicación de **nube personal** para red local. Permite subir, descargar, eliminar y gestionar archivos desde el navegador web, con un diseño dark-mode suave y un enfoque 100% educativo.
+Nimbo es una aplicación de **nube personal** para red local. Permite subir, descargar, eliminar y gestionar archivos desde el navegador web.
 
-- **Backend:** Go (solo biblioteca estándar, sin dependencias externas)
-- **Frontend:** HTML + CSS + JavaScript vanilla (sin frameworks)
-- **Despliegue:** Docker (Dockerfile multi-stage + docker-compose)
-- **Idioma:** Español chileno colloquial 😄
+- **Backend:** Go 
+- **Frontend:** HTML + CSS + JavaScript vanilla 
+- **Despliegue:** Docker 
 
 ---
 
 ## ✅ Requisitos previos
 
-Para que `./scripts/start.sh` funcione tal cual (recién bajado desde GitHub, sin configurar nada):
+Para que `./scripts/start.sh` funcione tal cual (recién bajado desde GitHub, sin configurar nada) se debe tener:
 
 - **Docker** instalado y en ejecución. En Linux: Docker Engine. En Windows/macOS: Docker Desktop (en Windows usa **WSL2**, el script es bash).
 - **Docker Compose v2** (plugin `docker compose`) o la versión v1 (`docker-compose`). El script detecta cuál tienes.
@@ -49,57 +48,6 @@ Para detener:
 
 ---
 
-## 📁 Estructura del proyecto
-
-```
-nimbo/
-├── docker/
-│   └── Dockerfile              # Multi-stage build
-├── backend/
-│   ├── cmd/
-│   │   └── main.go             # Punto de entrada
-│   ├── internal/
-│   │   ├── handlers/           # Controladores HTTP
-│   │   │   ├── files.go        # Upload, download, delete, list, zip
-│   │   │   ├── config.go       # Configuración GET/POST
-│   │   │   ├── logs.go         # Visualización de logs
-│   │   │   ├── health.go       # Health check
-│   │   │   └── respond.go      # Helpers JSON
-│   │   ├── services/
-│   │   │   ├── storage.go      # Lógica de archivos
-│   │   │   └── logger.go       # Sistema de logs con rotación
-│   │   ├── models/
-│   │   │   └── models.go       # Estructuras de datos
-│   │   └── config/
-│   │       └── config.go       # Cargar/guardar configuración
-│   ├── go.mod                  # module nimbo
-│   └── go.sum
-├── frontend/
-│   ├── index.html              # Página principal
-│   ├── css/
-│   │   └── style.css           # Estilos dark-mode suave
-│   └── js/
-│       ├── app.js              # Inicialización y estado global
-│       ├── api.js              # Cliente API + utilidades
-│       ├── files.js            # Lista y acciones de archivos
-│       ├── upload.js           # Subida con barra de progreso
-│       ├── notifications.js    # Sistema de toasts
-│       ├── config.js           # Panel de configuración
-│       └── logs.js             # Visualización de logs
-├── scripts/
-│   ├── start.sh                # start / stop / restart / status / logs / backup
-│   └── backup.sh               # Backup manual
-├── config/
-│   └── config.json             # Configuración persistente
-├── data/                       # Archivos subidos (volumen)
-├── logs/                       # Logs de actividad (volumen)
-├── backups/                    # Backups generados
-├── docker-compose.yml
-└── README.md
-```
-
----
-
 ## 🧰 Configuración
 
 La configuración vive en `config/config.json`:
@@ -127,63 +75,6 @@ Se puede editar a mano (y se persiste desde el panel ⚙️ Config) o mediante v
 
 ---
 
-## 🔌 API REST
-
-| Endpoint | Método | Descripción |
-|---|---|---|
-| `/` | GET | Frontend (HTML) |
-| `/api/files` | GET | Listar archivos → `{files: [{name, size, modTime}]}` |
-| `/api/upload` | POST | Subir archivos (multipart/form-data) → `{success, files, errors}` |
-| `/api/download/{filename}` | GET | Descargar archivo individual |
-| `/api/download-zip` | POST | Descargar ZIP → body `{files: ["a.txt"]}` |
-| `/api/delete/{filename}` | DELETE | Eliminar archivo → `{success}` |
-| `/api/config` | GET | Obtener configuración |
-| `/api/config` | POST | Actualizar configuración |
-| `/api/logs` | GET | Últimas 100 líneas de log (parámetro `limit`) |
-| `/api/health` | GET | Health check → `{status: "ok"}` |
-
----
-
-## 📊 Sistema de logs
-
-Los logs se escriben en **JSON Lines** (una línea = un JSON):
-
-```json
-{"timestamp":"2026-09-01T12:30:00-03:00","level":"INFO","event":"FILE_UPLOADED","message":"foto.jpg (5242880 bytes)"}
-```
-
-### Eventos registrados
-
-| Evento | Nivel |
-|---|---|
-| `FILE_UPLOADED` | INFO |
-| `FILE_DELETED` | INFO |
-| `FILE_DOWNLOADED` | INFO |
-| `FILE_DOWNLOAD_ZIP` | INFO |
-| `CONFIG_CHANGED` | INFO |
-| `ERROR_UPLOAD` | ERROR |
-| `SERVER_STARTED` | INFO |
-| `SERVER_STOPPED` | INFO |
-
-### Rotación
-
-- **Diaria** (nuevo archivo por día)
-- O cuando el archivo activo **supera los 10 MB**
-- Se conservan los **últimos 7 días**
-
----
-
-## 🔒 Seguridad
-
-- **Sanitización de nombres:** `filepath.Base()` + reemplazo de caracteres peligrosos (`../`, `\`, etc.) para evitar path traversal.
-- **Límite de tamaño:** 1 GB por archivo, aplicado durante el streaming con `io.LimitReader`.
-- **Path traversal:** cada ruta se valida contra la raíz con `filepath.Clean()` antes de abrir/escribir.
-- **Manejo de errores:** los mensajes al cliente no exponen rutas del sistema.
-- **Usuario sin privilegios** dentro del contenedor (`nimbo`).
-- **XSS en frontend:** todo texto dinámico se escapa antes de insertarse en el DOM.
-
----
-
 ## 🧱 Desarrollo local
 
 Requisitos: **Go 1.21+**
@@ -198,46 +89,17 @@ cd backend && go build ./... && go vet ./...
 
 ---
 
-## 💾 Backups
-
-```bash
-./scripts/backup.sh
-```
-
-Crea `backups/nimbo-backup-<fecha>.tar.gz` con `data/`, `logs/` y `config/`, y conserva los últimos 7 backups.
-
----
-
-## 🎨 Notas de diseño
-
-- Modo oscuro suave con la paleta `#1a1a2e · #16213e · #1e2a4a · #e8e8e8`
-- Acentos azul `#4a9eff` y verde `#4ade80`
-- Fuente `system-ui, sans-serif`, responsive (mobile-first)
-- Iconos con emojis (sin dependencias externas)
-- Toasts con 4 estados (success / error / warning / info), auto-cierre en 5 s
-
----
-
 ## 🌐 Conectarse desde otro dispositivo de la red
 
 Nimbo escucha en todas las interfaces (`0.0.0.0`), así que desde otro equipo de la **misma red** solo abre en el navegador:
 
 ```
-http://IP_DE_ESTA_MAQUINA:8080
+http://IP_DE_LA_MAQUINA_QUE_CORRE_NIMBO:8080
 ```
 
 Para saber la IP de esta máquina: `hostname -I` (suele ser algo como `192.168.x.x`).
 
 > Si no carga desde el otro dispositivo, revisa el firewall de esta máquina (abre el puerto 8080) y que el router no tenga aislamiento de clientes (AP isolation).
-
----
-
-## 🔧 Solución de problemas
-
-- **Las fechas/horas se ven en UTC o corridas:** se usa la hora local del host automáticamente. Si igual ves UTC, revisa que la variable `TZ` se detectó bien: `echo $TZ`. Si ejecutas `docker compose up` a mano (sin el script), Nimbo arranca en UTC.
-- **El puerto 8080 ya está en uso:** detén lo que lo ocupa o cambia el puerto. En Docker se edita `docker-compose.yml` (mapeo `"8080:8080"`); en modo local: `PORT=9090 ./scripts/start.sh start --local`.
-- **`config/config.json` aparece modificado en git:** es normal — al guardar cambios desde el panel ⚙️ el servidor persiste ahí (es la configuración). Puedes hacer `git checkout config/config.json` para descartar cambios.
-- **Nimbo no inicia tras `start`:** revisa los logs con `./scripts/start.sh logs` o `docker compose logs nimbo`.
 
 ---
 
